@@ -6,7 +6,7 @@
 
 ## 프로젝트 개요
 
-본 연구는 한국 현대 문학비평가 **황현산**의 비평 텍스트를 체계적으로 분석하여 그의 **지적 지형도(Intellectual Topography)**를 구축하는 것을 목표로 한다. 이를 위해 디지털 인문학(Digital Humanities) 방법론과 전통적 국문학 연구 방법론을 융합하여 접근한다.
+본 연구는 한국 현대 문학비평가 **황현산**의 비평 텍스트를 체계적으로 분석하여 그의 지적 지형도(Intellectual Topography)를 구축하는 것을 목표로 한다. 이를 위해 디지털 인문학(Digital Humanities) 방법론과 전통적 국문학 연구 방법론을 융합하여 접근한다.
 
 ### 연구 목표
 
@@ -140,86 +140,12 @@ TEI
   <!-- 핵심 개념어 분류 -->
   <taxonomy xml:id="tax-concept">
     <category xml:id="con-strangeness"><catDesc>낯섦(Defamiliarization)</catDesc></category>
-    <category xml:id="con-otherness"><catDesc>타자성(Otherness)</catDesc></category>
-    <category xml:id="con-translation"><catDesc>번역(Translation)</catDesc></category>
-    <category xml:id="con-ethics"><catDesc>윤리적 책임(Ethical Responsibility)</catDesc></category>
-    <category xml:id="con-allegory"><catDesc>알레고리(Allegory)</catDesc></category>
-  </taxonomy>
-  
-  <!-- 해석 태도 분류 -->
-  <taxonomy xml:id="tax-interp">
-    <category xml:id="int-affirmative"><catDesc>긍정적 평가</catDesc></category>
-    <category xml:id="int-neutral"><catDesc>중립적 언급</catDesc></category>
-    <category xml:id="int-critical"><catDesc>비판적 평가</catDesc></category>
-  </taxonomy>
-</classDecl>
-```
-
-#### 1차 인코딩 대상 텍스트
-
-| 출처 | 비평문 | 우선순위 | 비고 |
-|------|--------|----------|------|
-| 『현대시 산고』 | 「이육사의 안 좋은 시들」 | ★★★ | 핵심 분석 대상 |
-| 『잘 표현된 불행』 | 「비평의 언저리-시와 비평」 | ★★★ | 비평론 |
-| 『잘 표현된 불행』 | 「비평의 언저리-세상의 계약과 문학의 계약」 | ★★★ | 비평론 |
-| 『말과 시간의 깊이』 | 민족어 번역 관련 비평 | ★★☆ | 번역론 |
-| 『우물에서 하늘 보기』 | 시화집 산문 | ★☆☆ | 보조 자료 |
-
-#### 인코딩 작업 흐름
-
-```
-1. 원문 텍스트 입력
-   └── OCR 또는 직접 입력
-   
-2. 구조 마크업
-   └── div(장/절) → p(단락) → s(문장)
-   
-3. 개체명 태깅
-   └── persName, title, orgName, term
-   
-4. 인용 분류
-   └── quote type="direct|indirect|paraphrase"
-   
-5. 해석 태도 표시
-   └── interp value="affirmative|neutral|critical"
-   
-6. 검증 및 수정
-   └── XML 스키마 유효성 검사
-```
-
-### Phase 2: 네트워크 분석
-
-#### 추출 대상 관계망
-
-```
-황현산
-  │
-  ├─ [영향 받은 사상가]
-  │   ├─ 발터 벤야민 (알레고리, 성좌)
-  │   ├─ 테오도어 아도르노 (성좌적 사유)
-  │   ├─ 가스통 바슐라르 (김현 경유)
-  │   └─ 프랑스 상징주의 (보들레르, 말라르메, 랭보)
-  │
-  ├─ [학문적 계보]
-  │   ├─ 김현 (지도교수, 방법론적 영향)
-  │   └─ 한국 불문학계
-  │
-  ├─ [동시대 비평가 네트워크]
-  │   ├─ 김윤식
-  │   ├─ 김우창
-  │   └─ 김인환
-  │
-  └─ [분석 대상 시인]
-      ├─ 이육사
-      ├─ 윤동주
-      ├─ 김수영
-      └─ 기타 한국 현대시인
+    <category xml:id="con-otherness"><catDesc>타자성(Otherness)</catDesc></category가
 ```
 
 #### 분석 도구
 - **Neo4j**: 그래프 데이터베이스 기반 관계망 구축
 - **Gephi**: 네트워크 시각화
-- **D3.js**: 인터랙티브 시각화
 
 ### Phase 3: 텍스트 마이닝
 
