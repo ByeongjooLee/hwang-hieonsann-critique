@@ -1,210 +1,348 @@
-# 한국 문학 비평 TEI XML 변환 프로젝트
+# 황현산 지적 지형도 연구 프로젝트
 
-김우창의 「궁핍한 시대의 시인」을 TEI (Text Encoding Initiative) XML 형식으로 변환하고, 한국민족문화대백과 및 Wikipedia API를 활용하여 인물/작품/기관 정보를 자동으로 태깅하는 프로젝트입니다.
-
-## 주요 기능
-
-### 1. TEI XML 변환
-- 한국 문학 비평 텍스트를 TEI P5 표준에 맞게 XML로 변환
-- 인물명(`<persName>`), 작품명(`<title>`), 기관명(`<orgName>`), 전문용어(`<term>`) 자동 태깅
-- 중첩 태그 처리 및 XML 유효성 검증
-
-### 2. API 통합
-- **한국민족문화대백과 API**: 4,021명의 인물 정보 자동 수집
-- **Wikipedia API**: 664개의 Wikipedia 참조 링크 추가
-- 자동 캐싱으로 중복 API 호출 방지
-
-### 3. 엔티티 데이터베이스
-- 150+ 문학인 (시인, 소설가, 비평가 등)
-- 100+ 작품 (시집, 소설, 평론집 등)
-- 50+ 기관 및 전문용어
-- API로부터 자동 확장된 4,021명의 추가 인물 정보
-
-## 파일 구조
-
-```
-├── convert_to_xml.py              # 메인 TEI XML 변환 도구
-├── enrich_from_list_api.py        # 한국민족문화대백과 API 데이터 수집
-├── add_wikipedia_refs.py          # Wikipedia 참조 링크 추가
-├── batch_convert.py               # 배치 변환 도구
-├── fix_xml_tags.py                # XML 태그 수정 도구
-├── validate_xml.py                # XML 유효성 검증
-│
-├── korean-critique-schema.xsd     # TEI XML 스키마
-│
-├── enriched_persons_from_list_api.json        # 한국민족문화대백과 인물 데이터 (4,021명)
-├── enriched_persons_with_wikipedia.json       # Wikipedia 링크 포함 데이터
-├── wikipedia_cache.json                       # Wikipedia API 캐시
-│
-└── 테스트/디버깅 도구
-    ├── check_api_final.py         # API 엔드포인트 테스트
-    ├── check_article_structure.py # API 응답 구조 분석
-    ├── test_api_*.py              # 다양한 API 테스트
-    └── debug_api*.py              # API 디버깅 도구
-```
-
-## 설치 및 실행
-
-### 필요 패키지
-
-```bash
-pip install requests lxml
-```
-
-### 기본 사용법
-
-#### 1. TEI XML 변환
-
-```bash
-python convert_to_xml.py
-```
-
-대화형 모드로 실행되며, 변환할 텍스트 파일을 선택하고 출력 XML 파일명을 지정합니다.
-
-#### 2. 한국민족문화대백과 데이터 수집
-
-```bash
-# 테스트 모드 (10페이지)
-python enrich_from_list_api.py --mode test
-
-# 문학 분야만 수집 (97페이지)
-python enrich_from_list_api.py --mode literature
-
-# 전체 데이터 수집 (1,507페이지)
-python enrich_from_list_api.py --mode all
-
-# 특정 페이지 수만 수집
-python enrich_from_list_api.py --mode all --pages 400
-```
-
-#### 3. Wikipedia 참조 링크 추가
-
-```bash
-# JSON 파일에 Wikipedia 정보 추가
-python add_wikipedia_refs.py --mode json \
-  --input-json enriched_persons_from_list_api.json \
-  --output-json enriched_persons_with_wikipedia.json
-
-# 기존 XML 파일에 Wikipedia ref 속성 추가
-python add_wikipedia_refs.py --mode xml \
-  --xml-file output.xml \
-  --output-json enriched_persons_with_wikipedia.json
-
-# JSON과 XML 둘 다 처리
-python add_wikipedia_refs.py --mode both \
-  --xml-file output.xml
-```
-
-## 데이터 통계
-
-### 수집된 인물 데이터
-
-| 소스 | 인물 수 | Wikipedia 커버리지 |
-|------|---------|-------------------|
-| 수동 입력 | 150+ | - |
-| 한국민족문화대백과 | 4,021 | - |
-| Wikipedia 링크 | 664 | 16.5% |
-
-### 엔티티 태깅 개선
-
-| 항목 | 초기 | 개선 후 |
-|------|------|---------|
-| 인물명 태그 | 67 | 200+ |
-| 작품명 태그 | - | 100+ |
-| 기관명 태그 | - | 50+ |
-
-## API 정보
-
-### 한국민족문화대백과 API
-
-- **Base URL**: `https://devin.aks.ac.kr:8080/v1`
-- **인증**: X-API-Key 헤더 사용
-- **주요 엔드포인트**:
-  - `/Articles?pageNo={n}` - 전체 항목 리스트
-  - `/Articles/Field/{field}?pageNo={n}` - 특정 분야 항목
-  - `/Article/{eid}` - 특정 항목 상세 정보
-
-### Wikipedia API
-
-- **Base URL**: `https://ko.wikipedia.org/w/api.php` (검색)
-- **Summary API**: `https://ko.wikipedia.org/api/rest_v1/page/summary/{title}`
-- **기능**: 인물명으로 Wikipedia 문서 검색 및 URL 추출
-
-## TEI XML 스키마
-
-본 프로젝트는 TEI P5 표준을 따르며, 다음 요소들을 사용합니다:
-
-- `<TEI>`: 루트 요소
-- `<teiHeader>`: 메타데이터
-  - `<fileDesc>`: 파일 정보
-  - `<profileDesc>`: 텍스트 프로파일
-- `<text>`: 본문
-  - `<body>`: 텍스트 내용
-  - `<div type="chapter">`: 장/절 구분
-  - `<p>`: 문단
-  - `<persName>`: 인물명 (ref 속성으로 Wikipedia 링크)
-  - `<title>`: 작품명
-  - `<orgName>`: 기관명
-  - `<term>`: 전문용어
-
-## 작업 내역
-
-### 2024-11-10
-
-1. **초기 TEI XML 변환기 구현**
-   - 기본 인물/작품 데이터베이스 구축 (150+ 엔티티)
-   - 자동 태깅 기능 구현
-   - 중첩 태그 처리
-
-2. **한국민족문화대백과 API 통합**
-   - List API를 통한 대량 데이터 수집
-   - 4,021명 인물 정보 자동 수집
-   - 역할 자동 매핑 (시인, 소설가, 비평가 등)
-   - convert_to_xml.py 자동 업데이트
-
-3. **Wikipedia API 통합**
-   - Wikipedia 검색 및 Summary API 연동
-   - 664개 Wikipedia 참조 링크 수집 (16.5% 커버리지)
-   - 캐싱 시스템 구현
-   - XML ref 속성 자동 추가
-
-4. **Git 저장소 설정**
-   - 초기 커밋 완료
-   - .gitignore 설정 (소스 문서, IDE 설정 제외)
-
-## 개선 방향
-
-### 단기 (향후 작업)
-
-- [ ] Wikipedia 검색 정확도 개선 (시대 정보 활용)
-- [ ] 네트워크 오류 재시도 로직 추가
-- [ ] 작품명, 기관명 API 데이터 수집
-- [ ] XML 배치 변환 자동화
-
-### 중장기
-
-- [ ] 전체 「궁핍한 시대의 시인」 시리즈 변환
-- [ ] 다른 문학 비평 텍스트 확장
-- [ ] 웹 인터페이스 개발
-- [ ] TEI XML 뷰어 구현
-
-## 기술 스택
-
-- **Python 3.x**
-- **lxml**: XML 파싱 및 생성
-- **requests**: HTTP API 호출
-- **TEI P5**: XML 표준
-- **Git**: 버전 관리
-
-## 라이선스
-
-이 프로젝트는 학술 연구 목적으로 개발되었습니다.
-
-## 문의
-
-프로젝트 관련 문의사항은 이슈를 통해 남겨주세요.
+> 디지털 인문학과 전통 국문학 연구의 융합을 통한 문학비평가 황현산(1945-2018)의 지적 계보 분석
 
 ---
 
-**Last Updated**: 2024-11-10
-**Generated with**: Claude Code
+## 프로젝트 개요
+
+본 연구는 한국 현대 문학비평가 **황현산**의 비평 텍스트를 체계적으로 분석하여 그의 **지적 지형도(Intellectual Topography)**를 구축하는 것을 목표로 한다. 이를 위해 디지털 인문학(Digital Humanities) 방법론과 전통적 국문학 연구 방법론을 융합하여 접근한다.
+
+### 연구 목표
+
+1. 황현산 비평 텍스트의 **XML 데이터 변환** 및 구조화
+2. 인용 철학자/사상가의 **영향 관계 네트워크** 구축
+3. 해석 대상 작품과 **해석 방향성**의 체계적 분류
+4. 황현산 비평의 **핵심 개념어 온톨로지** 설계
+5. 학술논문으로의 발전
+
+---
+
+## 연구 대상 텍스트
+
+### 비평집
+| 서명 | 출판연도 | 비고 |
+|------|----------|------|
+| 『말과 시간의 깊이』 | 2002 | 1차 비평집 |
+| 『우물에서 하늘 보기』 | 2009 | 시화집/산문집 |
+| 『황현산의 현대시 산고』 | 2013 | 현대시 비평 |
+| 『잘 표현된 불행』 | 2019 | 유고 비평집 |
+
+### 주요 번역서
+- 말라르메, 『시집』 (2005)
+- 아폴리네르, 『알코올』 (2010)
+- 브르통, 『초현실주의 선언』 (2012)
+- 보들레르, 『악의 꽃』 (2016)
+- 벤야민, 『보들레르의 작품에 나타난 제2제정기의 파리』 (공역)
+
+---
+
+## 연구 방법론
+
+### Phase 1: 데이터 구축 (XML/TEI 마크업)
+
+황현산의 비평 텍스트를 TEI P5 기반 커스텀 스키마에 따라 **문장(`<s>`) 단위**까지 구조화한다.
+
+#### 마크업 계층 구조
+
+```
+TEI
+├── teiHeader (메타데이터)
+│   ├── fileDesc (서지정보: 제목, 저자, 출처)
+│   └── encodingDesc (인코딩 방침, 분류체계 taxonomy)
+└── text
+    ├── front (서문, 목차)
+    ├── body (본문)
+    │   └── div (장/절 구분)
+    │       └── p (단락)
+    │           └── s (문장) ← 최소 분석 단위
+    └── back (미주, 참고문헌)
+```
+
+#### 인코딩 예시
+
+```xml
+<!-- 문장 단위 마크업 예시: 「이육사의 안 좋은 시들」 -->
+<div type="criticism" xml:id="div-yooksa">
+  <head>이육사의 안 좋은 시들</head>
+  <p>
+    <s>
+      <persName ref="#yooksa" role="poet">이육사</persName>를 
+      <term type="concept">지사 시인</term>이라는 단일한 이미지로 고정하는 
+      기존의 관습적 독해를 비판적으로 바라본다.
+    </s>
+    <s>
+      그는 평가절하되었던 
+      <persName ref="#yooksa" role="poet">이육사</persName>의 시편들을 재조명한다.
+    </s>
+  </p>
+</div>
+
+<!-- 인용문 마크업 예시 -->
+<s>
+  <quote type="direct" source="현대시산고-p19" genre="poet">
+    "수만호 빛이라야 할 내 고향이언만"
+  </quote>을 제시하며 기존 평자들이 
+  <term type="lexical">수만호</term>를 '수만 가구(戶)'의 불빛이라는 
+  사회적 이미지로 관습적으로 독해해 온 것을 비판한다.
+</s>
+
+<!-- 해석/평가 마크업 예시 -->
+<s>
+  <interp ana="interpretation" value="critical">
+    이것이 <term type="lexical">수마노(水瑪瑙)</term>, 
+    즉 아름다운 보석의 이름임을 명확히 한다.
+  </interp>
+</s>
+
+<!-- 작품 제목 마크업 예시 -->
+<s>
+  황현산은 시인이 
+  <title level="a" type="poem">아편(鴉片)</title>에서 
+  <quote type="direct" genre="poet">"옥돌보다 찬 넋"</quote>으로 표상되는 
+  고결한 지사의 정신을 견지하면서도, 동시에 
+  <quote type="direct" genre="poet">"번제(燔祭)의 두렛불 타오르"</quote>는 
+  세속의 나른하고 욕망 가득한 열정에 무관심하지 않았다고 분석한다.
+</s>
+```
+
+#### 인코딩 대상 요소
+
+| 요소 | 태그 | 속성 | 용도 |
+|------|------|------|------|
+| **인물** | `<persName>` | `ref`, `role` | 시인, 비평가, 철학자 식별 |
+| **작품** | `<title>` | `level`, `type` | 시, 소설, 비평문 제목 |
+| **인용** | `<quote>` | `type`, `source`, `genre` | 직접/간접/의역 인용 |
+| **개념어** | `<term>` | `type` | 핵심 개념, 어휘, 사조 |
+| **해석** | `<interp>` | `ana`, `value` | 긍정/중립/비판적 평가 |
+| **기관** | `<orgName>` | `ref` | 출판사, 학회, 동인 |
+| **주석** | `<note>` | `type`, `target` | 편집자 주, 각주 |
+
+#### 분류체계(Taxonomy) 설계
+
+```xml
+<classDecl>
+  <!-- 인물 역할 분류 -->
+  <taxonomy xml:id="tax-role">
+    <category xml:id="role-critic"><catDesc>비평가</catDesc></category>
+    <category xml:id="role-poet"><catDesc>시인</catDesc></category>
+    <category xml:id="role-philosopher"><catDesc>철학자/사상가</catDesc></category>
+    <category xml:id="role-translator"><catDesc>번역가</catDesc></category>
+  </taxonomy>
+  
+  <!-- 인용 유형 분류 -->
+  <taxonomy xml:id="tax-quote">
+    <category xml:id="qt-direct"><catDesc>직접 인용</catDesc></category>
+    <category xml:id="qt-indirect"><catDesc>간접 인용</catDesc></category>
+    <category xml:id="qt-paraphrase"><catDesc>의역/요약</catDesc></category>
+  </taxonomy>
+  
+  <!-- 핵심 개념어 분류 -->
+  <taxonomy xml:id="tax-concept">
+    <category xml:id="con-strangeness"><catDesc>낯섦(Defamiliarization)</catDesc></category>
+    <category xml:id="con-otherness"><catDesc>타자성(Otherness)</catDesc></category>
+    <category xml:id="con-translation"><catDesc>번역(Translation)</catDesc></category>
+    <category xml:id="con-ethics"><catDesc>윤리적 책임(Ethical Responsibility)</catDesc></category>
+    <category xml:id="con-allegory"><catDesc>알레고리(Allegory)</catDesc></category>
+  </taxonomy>
+  
+  <!-- 해석 태도 분류 -->
+  <taxonomy xml:id="tax-interp">
+    <category xml:id="int-affirmative"><catDesc>긍정적 평가</catDesc></category>
+    <category xml:id="int-neutral"><catDesc>중립적 언급</catDesc></category>
+    <category xml:id="int-critical"><catDesc>비판적 평가</catDesc></category>
+  </taxonomy>
+</classDecl>
+```
+
+#### 1차 인코딩 대상 텍스트
+
+| 출처 | 비평문 | 우선순위 | 비고 |
+|------|--------|----------|------|
+| 『현대시 산고』 | 「이육사의 안 좋은 시들」 | ★★★ | 핵심 분석 대상 |
+| 『잘 표현된 불행』 | 「비평의 언저리-시와 비평」 | ★★★ | 비평론 |
+| 『잘 표현된 불행』 | 「비평의 언저리-세상의 계약과 문학의 계약」 | ★★★ | 비평론 |
+| 『말과 시간의 깊이』 | 민족어 번역 관련 비평 | ★★☆ | 번역론 |
+| 『우물에서 하늘 보기』 | 시화집 산문 | ★☆☆ | 보조 자료 |
+
+#### 인코딩 작업 흐름
+
+```
+1. 원문 텍스트 입력
+   └── OCR 또는 직접 입력
+   
+2. 구조 마크업
+   └── div(장/절) → p(단락) → s(문장)
+   
+3. 개체명 태깅
+   └── persName, title, orgName, term
+   
+4. 인용 분류
+   └── quote type="direct|indirect|paraphrase"
+   
+5. 해석 태도 표시
+   └── interp value="affirmative|neutral|critical"
+   
+6. 검증 및 수정
+   └── XML 스키마 유효성 검사
+```
+
+### Phase 2: 네트워크 분석
+
+#### 추출 대상 관계망
+
+```
+황현산
+  │
+  ├─ [영향 받은 사상가]
+  │   ├─ 발터 벤야민 (알레고리, 성좌)
+  │   ├─ 테오도어 아도르노 (성좌적 사유)
+  │   ├─ 가스통 바슐라르 (김현 경유)
+  │   └─ 프랑스 상징주의 (보들레르, 말라르메, 랭보)
+  │
+  ├─ [학문적 계보]
+  │   ├─ 김현 (지도교수, 방법론적 영향)
+  │   └─ 한국 불문학계
+  │
+  ├─ [동시대 비평가 네트워크]
+  │   ├─ 김윤식
+  │   ├─ 김우창
+  │   └─ 김인환
+  │
+  └─ [분석 대상 시인]
+      ├─ 이육사
+      ├─ 윤동주
+      ├─ 김수영
+      └─ 기타 한국 현대시인
+```
+
+#### 분석 도구
+- **Neo4j**: 그래프 데이터베이스 기반 관계망 구축
+- **Gephi**: 네트워크 시각화
+- **D3.js**: 인터랙티브 시각화
+
+### Phase 3: 텍스트 마이닝
+
+#### 분석 방법
+1. **핵심 개념어 추출**: TF-IDF, 키워드 분석
+2. **공기어 네트워크 분석**: 개념 간 의미적 연결
+3. **토픽 모델링 (LDA)**: 비평 주제의 시기별 변화
+4. **의미장(Semantic Field) 분석**: '밤', '우울', '알레고리' 등
+
+#### 분석 도구
+- **KoNLPy + Mecab**: 한국어 형태소 분석
+- **Gensim**: 토픽 모델링
+- **scikit-learn**: 텍스트 분류
+
+### Phase 4: 지적 전기 통합
+
+계량적 분석 결과를 황현산의 학문적 궤적과 통합 해석한다.
+
+#### 주요 전기적 맥락
+- 고려대학교 불어불문학과 학문적 형성기
+- 김현과의 사제 관계 및 방법론적 계승
+- 번역 작업을 통한 프랑스 문학/사상 수용
+- 문예지 비평 활동과 한국 현대시 해석
+
+---
+
+## 핵심 개념어 온톨로지 (초안)
+
+```
+황현산 비평의 핵심 개념
+│
+├─ 낯섦 (Defamiliarization)
+│   ├─ 텍스트의 엄밀한 독해
+│   ├─ 관습적 가치판단의 해체
+│   └─ cf. 러시아 형식주의 '오스트라네니에'
+│
+├─ 타자성 (Otherness)
+│   ├─ 주변화된 텍스트의 복원
+│   ├─ 단일 정체성 환원의 거부
+│   └─ cf. 레비나스 타자 윤리학
+│
+├─ 번역 (Translation)
+│   ├─ 언어 내 번역: 일상어 ↔ 문학어
+│   ├─ 언어 간 번역: 외국어 → 한국어
+│   └─ 명제: "민족문학 = 민족어의 번역"
+│
+├─ 윤리적 책임 (Ethical Responsibility)
+│   ├─ 형언 불가능성의 확인
+│   ├─ 지식 체계/계약의 재조정
+│   └─ 비평가의 근본적 태도
+│
+└─ 알레고리 (Allegory)
+    ├─ 상징 vs 알레고리 대립
+    ├─ 파편화된 현실의 표현
+    └─ cf. 벤야민 알레고리론
+```
+
+---
+
+## 선행연구 참조
+
+### 디지털 인문학 방법론
+- 장문석·유인태 (2021), 「디지털 인문학과 한국문학 연구」 - 시맨틱 데이터베이스 설계
+- 김일환 (2019), 「인문학을 위한 신문 빅 데이터와 텍스트 마이닝」
+- Jockers (2013), *Macroanalysis: Digital Methods and Literary History*
+- Women Writers Project, *Intertextual Networks* - TEI 상호텍스트성 인코딩
+
+### 황현산 관련 연구
+- 김인환, 「황현산의 산문: 비평의 원점」
+- 이찬, 황현산 글쓰기의 '성좌' 분석
+- 송승환 (2012), 「집중의 기술과 비평의 윤리」
+- 유성호 (2016), 『우물에서 하늘 보기』 서평
+
+### 비교 참조 (지적 전기 모델)
+- Eiland & Jennings (2014), *Walter Benjamin: A Critical Life*
+- Brennan (2021), *Places of Mind: A Life of Edward Said*
+
+---
+
+## 프로젝트 구조 (예정)
+
+```
+hwang-hyunsan-intellectual-topography/
+│
+├── README.md
+├── data/
+│   ├── raw/                    # 원본 텍스트
+│   ├── xml/                    # TEI/XML 마크업 파일
+│   └── processed/              # 전처리된 데이터
+│
+├── schema/
+│   ├── tei_customization.odd   # TEI 커스텀 스키마
+│   └── ontology.owl            # 개념어 온톨로지
+│
+├── analysis/
+│   ├── network/                # 네트워크 분석 결과
+│   ├── text_mining/            # 텍스트 마이닝 결과
+│   └── visualization/          # 시각화 자료
+│
+├── papers/
+│   └── drafts/                 # 논문 초고
+│
+└── docs/
+    ├── methodology.md          # 방법론 상세 설명
+    └── encoding_guidelines.md  # XML 인코딩 가이드라인
+```
+
+---
+
+## 예상 연구 성과
+
+1. **학술논문**: 황현산 비평의 지적 계보와 방법론적 특성 분석
+2. **데이터셋**: TEI/XML로 구조화된 황현산 비평 텍스트 코퍼스
+3. **시각화**: 지적 영향 관계 네트워크 인터랙티브 맵
+4. **방법론적 기여**: 한국 문학비평 연구에 디지털 인문학 적용 사례
+
+---
+
+## 참고 링크
+
+- [KCI 한국학술지인용색인](https://www.kci.go.kr/)
+- [TEI Guidelines](https://tei-c.org/guidelines/)
+- [Women Writers Project](https://wwp.northeastern.edu/)
+- [Neo4j Graph Database](https://neo4j.com/)
+
+
